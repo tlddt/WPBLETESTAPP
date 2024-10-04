@@ -13,7 +13,7 @@
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
         android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
-        tools:ignore="MissingConstraints" />
+        tools:ignore="MissingConstraints"/>
 
     <LinearLayout
         android:id="@+id/linearLayout"
@@ -26,8 +26,9 @@
             android:id="@+id/checkboxLoop"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
             android:text="@string/loop"
-            app:layout_constraintStart_toStartOf="parent"/>
+            android:checked="false"/>
 
         <SeekBar
             android:id="@+id/seekbarLoop"
@@ -89,7 +90,8 @@
         android:backgroundTint="@color/SteelBlue"
         app:layout_constraintBottom_toBottomOf="@id/btnBleScan"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent"
+        android:enabled="false"/>
 
     <Button
         android:id="@+id/btnSendData"
@@ -99,7 +101,8 @@
         android:backgroundTint="@color/SteelBlue"
         app:layout_constraintBottom_toBottomOf="@id/btnBleScan"
         app:layout_constraintStart_toStartOf="@id/btnDisConnect"
-        app:layout_constraintEnd_toEndOf="@id/btnDisConnect"/>
+        app:layout_constraintEnd_toEndOf="@id/btnDisConnect"
+        android:enabled="false"/>
 
     <Button
         android:id="@+id/btnDisConnect"
@@ -109,6 +112,14 @@
         android:backgroundTint="@color/SteelBlue"
         app:layout_constraintBottom_toBottomOf="@id/btncheckPermisssion"
         app:layout_constraintStart_toEndOf="@id/btnshowdevice"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:enabled="false"/>
+
+    <TextView
+        android:id="@+id/textList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/emptyString"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

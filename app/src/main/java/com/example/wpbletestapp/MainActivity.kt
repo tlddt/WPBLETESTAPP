@@ -40,7 +40,7 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private val tag : String = "MYTAG"
+    private val MYTAG : String = "MyTag"
     private  val scanDuration: Long = 2500
     private val BLUETOOTH_CONNECT_PERMISSION_CODE = 1001
     private val BLUETOOTH_SCAN_PERMISSION_CODE = 1002
@@ -62,6 +62,8 @@ class MainActivity : AppCompatActivity() {
     private var btGattCharacteristicTx : BluetoothGattCharacteristic? = null
     //private var btGattDescriptor : BluetoothGattDescriptor? = null
     private var scanning = false
+    private lateinit var myList : List<Pair<String,String>>
+    private lateinit var adapter : ArrayAdapter<Pair<String,String>>
 
     private lateinit var loopCheckBox : CheckBox
     private lateinit var loopSeekBar: SeekBar
@@ -69,23 +71,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btShowDeviceBtn : Button
     private lateinit var btSendDataBtn : Button
     private lateinit var btnCheckPermission : Button
-    private lateinit var btnDisconnect : Button
+    private lateinit var btDisconnectBtn : Button
     private lateinit var tvlab: TextView
     private lateinit var tvMsg : TextView
+    private lateinit var tvList : TextView
 
     private val mythread = MyThread()
     //伴生物件
     companion object BtCompanionObject{
-        var isRunning = true
-        var loopFG : Boolean = false
+        var isRunning = false
+        var isDisconnect = false
         var intervalTime : Int = 3
-        var devList : MutableList<BluetoothDevice> = mutableListOf()
-        var devName : MutableList<String> = mutableListOf()
+        //var devList : MutableList<BluetoothDevice> = mutableListOf()
+        //var devName : MutableList<String> = mutableListOf()
         var devMap : MutableMap<String,String> = mutableMapOf()
-        val invoice : String = "1234567890" + 0x0D.toChar() + 0x0A.toChar()  // == "1234567890" + "\r\n"
+        //val invoice : String = "1234567890" + 0x0D.toChar() + 0x0A.toChar()  // == "1234567890" + "\r\n"
         const val space : String= "" + 0x0D.toChar() + 0x0A.toChar()
-        var nowRequestStateCode = byteArrayOf()
-        val requestWP103StateCode = byteArrayOf(0x10,0x04,0x01)
         //val requestWP103StateCode = byteArrayOf(0x0D,0x0A)
     }
 
@@ -112,10 +113,10 @@ class MainActivity : AppCompatActivity() {
         enableBTlaunch =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { resuilt ->
                 if (resuilt.resultCode == RESULT_OK) {
-                    Log.i(tag, "Bluetooth Enabled (Adaptor)")
+                    Log.i(MYTAG, "Bluetooth Enabled (Adaptor)")
                     Toast.makeText(this, "Bluetooth Enabled", Toast.LENGTH_SHORT).show()
                 } else {
-                    Log.e(tag, "Bluetooth Adaptor Permission Denial")
+                    Log.e(MYTAG, "Bluetooth Adaptor Permission Denial")
                     Toast.makeText(this, "Bluetooth Disabled && END APP", Toast.LENGTH_SHORT).show()
                     finish()
                 }
@@ -128,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         btAdapter = btManager.adapter
         //檢查藍芽是否開啟
         if (btAdapter == null) {
-            Log.e(tag, "The Device doesn't support Bluetooth")   //裝置不支持藍芽
+            Log.e(MYTAG, "The Device doesn't support Bluetooth")   //裝置不支持藍芽
             finish()
         } else if (!btAdapter!!.isEnabled) {
             enableBTlaunch.launch(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE))   //Intent : 開啟藍芽
@@ -141,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         btSendDataBtn.setOnClickListener {
             btGatt?.let { gt ->
                 if (loopCheckBox.isChecked)
-                    btnSendData(gt,btGattCharacteristicRx!!,loopCheckBox.isChecked)
+                    btnSendData(gt,btGattCharacteristicRx!!)
                 else
                     //btnSendData(gt,btGattCharacteristicRx!!,btGattCharacteristicTx!!) }
                     btnSendData(gt, btGattCharacteristicRx!!)
@@ -150,13 +151,12 @@ class MainActivity : AppCompatActivity() {
         //按鍵 : 藍芽相關權限顯示
         btnCheckPermission.setOnClickListener { btnCheckPermission() }
         //按鍵 : 藍芽取消連線
-        btnDisconnect.setOnClickListener {
+        btDisconnectBtn.setOnClickListener {
             if (btGatt != null) {
                 btGatt!!.disconnect()
-                btGatt!!.close()
-                btSendDataBtn.isEnabled = false
-                tvMsg.text = R.string.emptyString.toString()
-                Log.d("btnDisconnect", "GATT Closed")
+                isDisconnect = true
+                btSendDataBtn.text = getText(R.string.send_btn)
+                Log.d(MYTAG, "BluetoothGATT Disconnected")
             }
         }
         loopCheckBox.setOnCheckedChangeListener { compoundButton, state ->
@@ -220,9 +220,10 @@ class MainActivity : AppCompatActivity() {
         btShowDeviceBtn = findViewById(R.id.btnshowdevice)
         btSendDataBtn = findViewById(R.id.btnSendData)
         btnCheckPermission = findViewById(R.id.btncheckPermisssion)
-        btnDisconnect = findViewById(R.id.btnDisConnect)
+        btDisconnectBtn = findViewById(R.id.btnDisConnect)
         tvlab = findViewById(R.id.textlable)
         tvMsg = findViewById(R.id.textmsg)
+        tvList = findViewById(R.id.textList)
     }
     //檢查藍芽相關權限授權與否
     private fun btnCheckPermission(){
@@ -249,19 +250,19 @@ class MainActivity : AppCompatActivity() {
             BLUETOOTH_CONNECT_PERMISSION_CODE->{
                if(grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                    Toast.makeText(this, "BT Connect Grant", Toast.LENGTH_LONG).show()
-                   Log.i(tag, "Bluetooth Connect Grant")
+                   Log.i(MYTAG, "Bluetooth Connect Grant")
                }else {
                    Toast.makeText(this, "BT Connect Denial", Toast.LENGTH_LONG).show()
-                   Log.i(tag, "Bluetooth Connect Denial")
+                   Log.i(MYTAG, "Bluetooth Connect Denial")
                }
             }
             BLUETOOTH_SCAN_PERMISSION_CODE-> {
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "BT Scan Grant", Toast.LENGTH_LONG).show()
-                    Log.i(tag, "Bluetooth Scan Grant")
+                    Log.i(MYTAG, "Bluetooth Scan Grant")
                 }else {
                     Toast.makeText(this, "BT Scan Denial", Toast.LENGTH_LONG).show()
-                    Log.i(tag, "Bluetooth Scan Denial")
+                    Log.i(MYTAG, "Bluetooth Scan Denial")
                 }
             }
             ANDROID_12_PERMISSION_CODE->{
@@ -277,18 +278,18 @@ class MainActivity : AppCompatActivity() {
                         grantResults[2] == context &&
                         grantResults[3] == context
                         )
-                        Log.i(tag,"GRANT: Bluetooth Connect,Scan,Fine,Coarse ")
+                        Log.i(MYTAG,"GRANT: Bluetooth Connect,Scan,Fine,Coarse ")
                     else
-                        Log.i(tag,"Denial: Bluetooth Connect,Scan,Fine,Coarse")
+                        Log.i(MYTAG,"Denial: Bluetooth Connect,Scan,Fine,Coarse")
                 }
 
 
             }
             ANDROID_6_PERMISSION_CODE->{
                 if(grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED)
-                    Log.i(tag,"Fine & Coarse Grant")
+                    Log.i(MYTAG,"Fine & Coarse Grant")
                 else
-                    Log.i(tag,"fine & Coarse Denial")
+                    Log.i(MYTAG,"fine & Coarse Denial")
             }
         }
     }
@@ -304,8 +305,8 @@ class MainActivity : AppCompatActivity() {
         val bleScanner = bleAdapter!!.bluetoothLeScanner
         if (!scanning) {
 
-            devList.clear()
-            devName.clear()
+            //devList.clear()
+            //devName.clear()
             devMap.clear()
 
             Handler(Looper.getMainLooper()).postDelayed({
@@ -379,17 +380,13 @@ class MainActivity : AppCompatActivity() {
                     btSendDataBtn.isEnabled = false
                     tvMsg.text = ""
                 }.create().show()*/
-
-
-            val myList : List<Pair<String,String>> = devMap.toList()
-            val adapter = object : ArrayAdapter<Pair<String,String>>(this,R.layout.dialog_two_columns,myList){
+            myList = devMap.toList()
+            adapter = object : ArrayAdapter<Pair<String,String>>(this,R.layout.dialog_two_columns,myList){
                 override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                     val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.dialog_two_columns,parent,false)
                     val item = getItem(position)
-
                     view.findViewById<TextView>(R.id.column1).text = item?.first
                     view.findViewById<TextView>(R.id.column2).text = item?.second
-
                     //return super.getView(position, convertView, parent)
                     return view
                 }
@@ -403,10 +400,10 @@ class MainActivity : AppCompatActivity() {
                         it.close()
                         btGatt = null
                     }
+
                     btDevice = btAdapter!!.getRemoteDevice(myList[which].second)
                     btGatt = btDevice.connectGatt(this,false,GattCallback(),BluetoothDevice.TRANSPORT_LE)
-                    btSendDataBtn.isEnabled = false
-                    tvMsg.text = R.string.emptyString.toString()
+                    tvMsg.text = getText(R.string.emptyString)
                 }.create().show()
 
         }else{
@@ -431,7 +428,7 @@ class MainActivity : AppCompatActivity() {
                         gatt!!.discoverServices()
                     }
                     BluetoothProfile.STATE_DISCONNECTED -> {
-                        Toast.makeText(this@MainActivity,"Disconnected from GATT server",Toast.LENGTH_SHORT).show()
+                        //Toast.makeText(this@MainActivity,"Disconnected from GATT server",Toast.LENGTH_SHORT).show()
                         Log.d("BluetoothGattCallback", "Disconnected from GATT server")
                     }
                 }
@@ -445,7 +442,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 发现服务的回调
-        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        //@RequiresApi(Build.VERSION_CODES.TIRAMISU)
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             super.onServicesDiscovered(gatt, status)
@@ -464,12 +461,12 @@ class MainActivity : AppCompatActivity() {
                                 gattCharacteristic.uuid.toString().equals(rxUUID,ignoreCase = true) ->{
                                     btGattCharacteristicRx = gattCharacteristic
                                     if (btGattService == null) btGattService = gattCharacteristic.service
-                                    Log.d("onServicesDiscovered","get RX Characteristic")
+                                    Log.d(MYTAG,"onServicesDiscovered : Characteristic Get(Rx)")
                                 }
                                 gattCharacteristic.uuid.toString().equals(txUUID,ignoreCase = true) ->{
                                     btGattCharacteristicTx = gattCharacteristic
                                     if (btGattService == null) btGattService = gattCharacteristic.service
-                                    Log.d("onServicesDiscovered","get TX Characteristic")
+                                    Log.d(MYTAG,"onServicesDiscovered : Characteristic Get(Tx)")
                                 }
                             }
                         }
@@ -478,9 +475,11 @@ class MainActivity : AppCompatActivity() {
 
                 Thread{
                     Handler(Looper.getMainLooper()).post {
-                        tvMsg.text = btDevice.name.toString()
-                        //btGattCharacteristicRx?.let {btGattCharacteristicTx?.let{ btSendDataBtn.isEnabled = true}}
-                        btGattCharacteristicRx?.let {btSendDataBtn.isEnabled = true}
+                        btGattCharacteristicRx?.let {
+                            tvMsg.text = btDevice.name.toString()
+                            btDisconnectBtn.isEnabled = true
+                            btSendDataBtn.isEnabled = true
+                        }
                     }
                 }.start()
             }else {
@@ -499,7 +498,7 @@ class MainActivity : AppCompatActivity() {
                 //Toast.makeText(this@MainActivity,"GATT write success",Toast.LENGTH_SHORT).show()
             }else{
                 Log.d("onCharacteristicWrite","GATT WRITED FAILED")
-                Toast.makeText(this@MainActivity,"GATT write Failed",Toast.LENGTH_SHORT).show()
+                //Toast.makeText(this@MainActivity,"GATT write Failed",Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -533,24 +532,19 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun btnSendData(gatt: BluetoothGatt?,gattRx: BluetoothGattCharacteristic?,isLoop:Boolean = false){
-        //val dataByte = requestWP103StateCode
+    private fun btnSendData(gatt: BluetoothGatt?,gattRx: BluetoothGattCharacteristic?){
         val dataByte = space.toByteArray()
-        //val dataByte = invoice.toByteArray()
-
-        if(loopFG){
-            //mythread.stopThread()
-            loopFG = false
-            isRunning = false
-            myHandler.removeCallbacks(runnable)
-            return
-        }
 
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this,Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 return
             }
         }
+
+        if (btGattCharacteristicRx == null){
+            return
+        }
+
         /** //Android 13以上檢查 Connect Permission 並要求授權
         val listDev = btManager.getConnectedDevices(BluetoothProfile.GATT)
         if (listDev.isEmpty()){
@@ -558,48 +552,70 @@ class MainActivity : AppCompatActivity() {
             return
         }*/
 
-        gattRx?.let {gR->
-            if(isLoop) {
-                 //使用Runnable 的方式重複
-                runnable = Runnable {
-                    if(isRunning){
-                        gR.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                        gR.setValue(dataByte)
-                        gatt!!.writeCharacteristic(gattRx)
-                        myHandler.postDelayed(runnable, (intervalTime*1000).toLong())
+        //停止連續列印
+        if(loopCheckBox.isChecked && isRunning){
+            isRunning = false
+            btSendDataBtn.text = getText(R.string.send_btn)
+            myHandler.removeCallbacks(runnable)
+            return
+
+        //開始連續列印
+        }else if(loopCheckBox.isChecked && !isRunning){
+            isRunning = true
+
+            //使用Runnable 的方式重複
+            runnable = Runnable {
+                if(isRunning){
+                    btGattCharacteristicRx!!.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    btGattCharacteristicRx!!.setValue(dataByte)
+                    gatt!!.writeCharacteristic(gattRx)
+                    myHandler.postDelayed(runnable, (intervalTime*1000).toLong())
+                }
+            }
+            
+            if(isDisconnect){
+                btGatt?.let{
+                    if(it.connect()){
+                        myHandler.post(runnable)
+                        isDisconnect = false
                     }
                 }
-                isRunning = true
+            }else{
                 myHandler.post(runnable)
-                /** //使用Thread 的方式重複
+            }
+
+            btSendDataBtn.text = getText(R.string.stop_btn)
+            /** //使用Thread 的方式重複
                 mythread = Thread{
-                    while(!Thread.currentThread().isInterrupted){
-                        gattWriteHandler.post{
-                            gR.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                            gR.setValue(dataByte)
-                            gatt!!.writeCharacteristic(gattRx)
-                        }
-                        try{
-                            Thread.sleep(interval)
-                        }catch (e:InterruptedException){
-                            break
-                        }
-                    }
+                while(!Thread.currentThread().isInterrupted){
+                gattWriteHandler.post{
+                gR.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                gR.setValue(dataByte)
+                gatt!!.writeCharacteristic(gattRx)
+                }
+                try{
+                Thread.sleep(interval)
+                }catch (e:InterruptedException){
+                break
+                }
+                }
                 }
                 mythread.start()*/
                 //mythread.start()
-                loopFG = true
-            }else{
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    gatt!!.writeCharacteristic(gR,dataByte,BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
-                }else{
-                    // https://docs.nordicsemi.com/bundle/sdk_nrf5_v17.1.0/page/ble_sdk_app_nus_eval.html
-                    gR.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                    gR.setValue(dataByte)
-                    gatt!!.writeCharacteristic(gattRx)
-                    Log.d("btnSendData", "Write Data to Gatt")
+        //開始單次列印
+        }else{
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                btGattCharacteristicRx?.let {
+                    gatt!!.writeCharacteristic(it,dataByte,BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT)
                 }
+            }else{
+                // https://docs.nordicsemi.com/bundle/sdk_nrf5_v17.1.0/page/ble_sdk_app_nus_eval.html
+                btGattCharacteristicRx!!.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                btGattCharacteristicRx!!.setValue(dataByte)
+                gatt!!.writeCharacteristic(gattRx)
+                Log.d("btnSendData", "Write Data to Gatt")
             }
+        }
             /**
             gattTx?.let {gT ->
                 gatt!!.setCharacteristicNotification(gattTx,true)
@@ -607,7 +623,6 @@ class MainActivity : AppCompatActivity() {
                 descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 gatt.writeDescriptor(descriptor)
             }**/
-        }
     }
 
     inner class MyThread : Thread(){
@@ -629,9 +644,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        fun stopThread(){
+        /*fun stopThread(){
             isrunning = false
-        }
+        }*/
     }
 
     /*@SuppressLint("MissingPermission")
