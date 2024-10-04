@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/Theme.AppCompat.DayNight.DarkActionBar"
+        tools:ignore="MissingConstraints" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/textlable">
+
+        <CheckBox
+            android:id="@+id/checkboxLoop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/loop"
+            app:layout_constraintStart_toStartOf="parent"/>
+
+        <SeekBar
+            android:id="@+id/seekbarLoop"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:max="60"
+            android:min="3"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnBleScan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/scan_btn"
+        android:backgroundTint="@color/SteelBlue"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnshowdevice"
+        app:layout_constraintBottom_toTopOf="@id/btncheckPermisssion"/>
+
+        <TextView
+        android:id="@+id/textlable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
+        android:text="@string/bluetoothdevice"
+        android:textSize="20sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btnBleScan" />
+
+    <TextView
+        android:id="@+id/textmsg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textSize="20sp"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toEndOf="@id/textlable"
+        app:layout_constraintBottom_toBottomOf="@id/textlable"/>
+
+    <Button
+        android:id="@+id/btncheckPermisssion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="@string/check_permission"
+        android:backgroundTint="@color/SteelBlue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@id/btnBleScan"
+        app:layout_constraintEnd_toEndOf="@id/btnshowdevice"/>
+
+    <Button
+        android:id="@+id/btnshowdevice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/showDevice"
+        android:backgroundTint="@color/SteelBlue"
+        app:layout_constraintBottom_toBottomOf="@id/btnBleScan"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <Button
+        android:id="@+id/btnSendData"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/send_btn"
+        android:backgroundTint="@color/SteelBlue"
+        app:layout_constraintBottom_toBottomOf="@id/btnBleScan"
+        app:layout_constraintStart_toStartOf="@id/btnDisConnect"
+        app:layout_constraintEnd_toEndOf="@id/btnDisConnect"/>
+
+    <Button
+        android:id="@+id/btnDisConnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/disconnect_btn"
+        android:backgroundTint="@color/SteelBlue"
+        app:layout_constraintBottom_toBottomOf="@id/btncheckPermisssion"
+        app:layout_constraintStart_toEndOf="@id/btnshowdevice"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

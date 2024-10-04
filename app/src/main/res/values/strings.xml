@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">WPBLETESTAPP</string>
+    <string name="sele_text">Hello</string>
+    <string name="scan_btn">BLE_SCAN</string>
+    <string name="showDevice">DEVICE</string>
+    <string name="send_btn">SEND</string>
+    <string name="stop_btn">STOP</string>
+    <string name="check_permission">PermissionList</string>
+    <string name="disconnect_btn">Disconnect</string>
+    <string name="bluetoothdevice">BluetoothDevice : </string>
+    <string name="ColumnOne">Column 1</string>
+    <string name="ColumnTwo">Column 2</string>
+    <string name="loop">Loop</string>
+    <string name="emptyString">""</string>
+</resources>
